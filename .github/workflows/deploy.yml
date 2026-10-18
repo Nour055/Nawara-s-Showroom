@@ -45,7 +45,8 @@ jobs:
           fi
           OUTPUT_DIR=$(dirname "$INDEX_FILE")
           cp "$INDEX_FILE" "$OUTPUT_DIR/404.html"
-          echo "OUTPUT_DIR=$OUTPUT_DIR" >> "$GITHUB_ENV"
+          echo "Build directory: $OUTPUT_DIR"
+          echo "$OUTPUT_DIR" > pages-dir.txt
 
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
