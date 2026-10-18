@@ -50,7 +50,7 @@ jobs:
           cp "$INDEX_FILE" "$OUTPUT_DIR/404.html"
           echo "Dossier à publier : $OUTPUT_DIR"
 
-          echo "$OUTPUT_DIR" >> "$GITHUB_OUTPUT"
+          echo "output_dir=$OUTPUT_DIR" >> "$GITHUB_OUTPUT"
         id: prepare
 
       - name: Upload artifact
