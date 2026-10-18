@@ -39,36 +39,34 @@ jobs:
       - name: Prepare GitHub Pages
         run: |
           INDEX_FILE=$(find dist -name index.html -type f | head -n 1)
+
           if [ -z "$INDEX_FILE" ]; then
             echo "Erreur : index.html introuvable dans dist"
+            find dist -maxdepth 4 -type f || true
             exit 1
           fi
+
           OUTPUT_DIR=$(dirname "$INDEX_FILE")
           cp "$INDEX_FILE" "$OUTPUT_DIR/404.html"
-          echo "Build directory: $OUTPUT_DIR"
-          echo "$OUTPUT_DIR" > pages-dir.txt
+          echo "Dossier à publier : $OUTPUT_DIR"
+
+          echo "$OUTPUT_DIR" >> "$GITHUB_OUTPUT"
+        id: prepare
 
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
         with:
-          path: ${{ steps.get_output.outputs.path }}
-
-    outputs:
-      output_dir: ${{ steps.get_output.outputs.path }}
+          path: ${{ steps.prepare.outputs.output_dir }}
 
   deploy:
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
+
     runs-on: ubuntu-latest
     needs: build
 
     steps:
-      - name: Download artifact
-        uses: actions/download-artifact@v4
-        with:
-          name: github-pages
-          path: ./artifact
       - name: Deploy to GitHub Pages
         id: deployment
         uses: actions/deploy-pages@v4
