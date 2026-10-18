@@ -1,8 +1,10 @@
-name: Deploy to GitHub Pages
+
+name: Deploy Angular to GitHub Pages
 
 on:
   push:
-    branches: [main]
+    branches:
+      - main
   workflow_dispatch:
 
 permissions:
@@ -11,32 +13,64 @@ permissions:
   id-token: write
 
 concurrency:
-  group: pages
+  group: github-pages
   cancel-in-progress: true
 
 jobs:
   build:
     runs-on: ubuntu-latest
+
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
         with:
           node-version: 22
           cache: npm
-      - run: npm ci
-      - run: npx ng build --base-href "/${{ github.event.repository.name }}/"
-      # fallback pour le routing Angular (rechargement d'une page / lien direct)
-      - run: cp dist/Nawara-s-Showroom/browser/index.html dist/Nawara-s-Showroom/browser/404.html
-      - uses: actions/upload-pages-artifact@v3
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build Angular
+        run: npm run build -- --base-href /Nawara-s-Showroom/
+
+      - name: Prepare GitHub Pages
+        id: prepare
+        shell: bash
+        run: |
+          set -e
+
+          INDEX_FILE=$(find dist/showroom-auto/browser -maxdepth 1 -name index.html -type f | head -n 1)
+
+          if [ -z "$INDEX_FILE" ]; then
+            echo "Erreur : index.html introuvable."
+            echo "Contenu du dossier dist :"
+            find dist -maxdepth 5 -type f || true
+            exit 1
+          fi
+
+          OUTPUT_DIR=$(dirname "$INDEX_FILE")
+          cp "$INDEX_FILE" "$OUTPUT_DIR/404.html"
+
+          echo "Dossier à publier : $OUTPUT_DIR"
+          echo "output_dir=$OUTPUT_DIR" >> "$GITHUB_OUTPUT"
+
+      - name: Upload artifact
+        uses: actions/upload-pages-artifact@v3
         with:
-          path: dist/Nawara-s-Showroom/browser
+          path: ${{ steps.prepare.outputs.output_dir }}
 
   deploy:
-    needs: build
-    runs-on: ubuntu-latest
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
+
+    runs-on: ubuntu-latest
+    needs: build
+
     steps:
-      - id: deployment
+      - name: Deploy to GitHub Pages
+        id: deployment
         uses: actions/deploy-pages@v4
